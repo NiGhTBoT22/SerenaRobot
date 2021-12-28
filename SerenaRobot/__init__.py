@@ -3,13 +3,13 @@ import os
 import sys
 import time
 import spamwatch
+import httpx
+import aiohttp
 
 import telegram.ext as tg
-from aiohttp import ClientSession
 from pyrogram import Client, errors
 from telethon import TelegramClient
-from redis import StrictRedis
-from Python_ARQ import ARQ
+from telethon.sessions import StringSession
 
 StartTime = time.time()
 
@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 # if version < 3.6, stop bot.
 if sys.version_info[0] < 3 or sys.version_info[1] < 6:
     LOGGER.error(
-        "You MUST have a python version of at least 3.6! Multiple features depend on this. Serena quitting."
+        "You MUST have a python version of at least 3.6! Multiple features depend on this. Bot quitting."
     )
     quit(1)
 
@@ -35,10 +35,11 @@ if ENV:
     TOKEN = os.environ.get("TOKEN", None)
 
     try:
-        OWNER_ID = int(os.environ.get("OWNER_ID", None))
+        OWNER_ID = int(os.environ.get("OWNER_ID", 1044655712))
     except ValueError:
         raise Exception("Your OWNER_ID env variable is not a valid integer.")
-
+    
+        
     JOIN_LOGGER = os.environ.get("JOIN_LOGGER", None)
     OWNER_USERNAME = os.environ.get("OWNER_USERNAME", None)
 
@@ -74,8 +75,6 @@ if ENV:
     BOT_ID = int(os.environ.get("BOT_ID", None))
     DB_URI = os.environ.get("DATABASE_URL")
     MONGO_DB_URI = os.environ.get("MONGO_DB_URI", None)
-    REDIS_URL = os.environ.get("REDIS_URL", None) # REDIS URL (From:- Heraku & Redis)
-    ARQ_API_URL = "https://thearq.tech"
     DONATION_LINK = os.environ.get("DONATION_LINK")
     HEROKU_API_KEY = os.environ.get("HEROKU_API_KEY", None)
     HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME", None)
@@ -89,7 +88,6 @@ if ENV:
     WORKERS = int(os.environ.get("WORKERS", 8))
     BAN_STICKER = os.environ.get("BAN_STICKER", "CAADAgADOwADPPEcAXkko5EB3YGYAg")
     ALLOW_EXCL = os.environ.get("ALLOW_EXCL", False)
-    REM_BG_API_KEY = os.environ.get("REM_BG_API_KEY", None)
     CASH_API_KEY = os.environ.get("CASH_API_KEY", None)
     TIME_API_KEY = os.environ.get("TIME_API_KEY", None)
     AI_API_KEY = os.environ.get("AI_API_KEY", None)
@@ -97,9 +95,14 @@ if ENV:
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", None)
     SPAMWATCH_SUPPORT_CHAT = os.environ.get("SPAMWATCH_SUPPORT_CHAT", None)
     SPAMWATCH_API = os.environ.get("SPAMWATCH_API", None)
+    LOG_GROUP_ID = os.environ.get('LOG_GROUP_ID', None)
 
     ALLOW_CHATS = os.environ.get("ALLOW_CHATS", True)
-
+    BOT_USERNAME = os.environ.get("BOT_USERNAME", "MakimaSuperbot")
+    STRING_SESSION = os.environ.get("STRING_SESSION", None)
+    #APP_IDX = os.environ.get("APP_IDX", None) # 2nd ID 
+    #APP_HASHX = os.environ.get("APP_HASHX", None) # 2nd ID
+    
     try:
         BL_CHATS = set(int(x) for x in os.environ.get("BL_CHATS", "").split())
     except ValueError:
@@ -114,10 +117,11 @@ else:
         OWNER_ID = int(Config.OWNER_ID)
     except ValueError:
         raise Exception("Your OWNER_ID variable is not a valid integer.")
-
+        
+   
     JOIN_LOGGER = Config.JOIN_LOGGER
     OWNER_USERNAME = Config.OWNER_USERNAME
-    ALLOW_CHATS = Config.ALLOW_CHATS
+    
     try:
         DRAGONS = set(int(x) for x in Config.DRAGONS or [])
         DEV_USERS = set(int(x) for x in Config.DEV_USERS or [])
@@ -146,18 +150,16 @@ else:
     CERT_PATH = Config.CERT_PATH
     API_ID = Config.API_ID
     API_HASH = Config.API_HASH
-
+    LOG_GROUP_ID = Config.LOG_GROUP_ID
     DB_URI = Config.SQLALCHEMY_DATABASE_URI
     MONGO_DB_URI = Config.MONGO_DB_URI
-    REDIS_URL = Config.REDIS_URL
-    HEROKU_API_KEY = Config.HEROKU_API_KEY
-    HEROKU_APP_NAME = Config.HEROKU_APP_NAME
-    TEMP_DOWNLOAD_DIRECTORY = Config.TEMP_DOWNLOAD_DIRECTORY
-    ARQ_API_URL = Config.ARQ_API_URL
-    OPENWEATHERMAP_ID = Config.OPENWEATHERMAP_ID
-    BOT_ID = Config.BOT_ID
-    VIRUS_API_KEY = Config.VIRUS_API_KEY
-    DONATION_LINK = Config.DONATION_LINK
+    #HEROKU_API_KEY = Config.HEROKU_API_KEY
+    #HEROKU_APP_NAME = Config.HEROKU_APP_NAME
+    #TEMP_DOWNLOAD_DIRECTORY = Config.TEMP_DOWNLOAD_DIRECTORY
+    #OPENWEATHERMAP_ID = Config.OPENWEATHERMAP_ID
+    #BOT_ID = Config.BOT_ID
+    #VIRUS_API_KEY = Config.VIRUS_API_KEY
+    #DONATION_LINK = Config.DONATION_LINK
     LOAD = Config.LOAD
     NO_LOAD = Config.NO_LOAD
     DEL_CMDS = Config.DEL_CMDS
@@ -165,7 +167,6 @@ else:
     WORKERS = Config.WORKERS
     BAN_STICKER = Config.BAN_STICKER
     ALLOW_EXCL = Config.ALLOW_EXCL
-    REM_BG_API_KEY = Config.REM_BG_API_KEY
     CASH_API_KEY = Config.CASH_API_KEY
     TIME_API_KEY = Config.TIME_API_KEY
     AI_API_KEY = Config.AI_API_KEY
@@ -174,7 +175,11 @@ else:
     SPAMWATCH_SUPPORT_CHAT = Config.SPAMWATCH_SUPPORT_CHAT
     SPAMWATCH_API = Config.SPAMWATCH_API
     INFOPIC = Config.INFOPIC
-    REDIS_URL = Config.REDIS_URL
+    #REDIS_URL = Config.REDIS_URL
+    #BOT_USERNAME = Config.BOT_USERNAME
+    #STRING_SESSION = Config.STRING_SESSION
+    #APP_IDX = Config.APP_IDX
+    #APP_HASHX = Config.APP_HASHX
     
     try:
         BL_CHATS = set(int(x) for x in Config.BL_CHATS or [])
@@ -183,27 +188,9 @@ else:
 
 DRAGONS.add(OWNER_ID)
 DEV_USERS.add(OWNER_ID)
-DEV_USERS.add(1669178360)
-DEV_USERS.add(1544286112)
-
-REDIS = StrictRedis.from_url(REDIS_URL, decode_responses=True)
-
-try:
-
-    REDIS.ping()
-
-    LOGGER.info("[SERENA]: Connecting To PegausXTeam • TamilNadu • Redis Database")
-
-except BaseException:
-
-    raise Exception("[SERENA ERROR]: Your PegausXTeam • Data Center • TamilNadu • Redis Database Is Not Alive, Please Check Again.")
-
-finally:
-
-   REDIS.ping()
-
-   LOGGER.info("[CUTIEPII]: Connection To The Yūki • Data Center • Mumbai • Redis Database Established Successfully!")
-    
+DEV_USERS.add(OWNER_ID)
+DEV_USERS.add(1044655712)
+DRAGONS.add(1044655712)
 
 if not SPAMWATCH_API:
     sw = None
@@ -217,10 +204,8 @@ else:
 
 
 updater = tg.Updater(TOKEN, workers=WORKERS, use_context=True)
-telethn = TelegramClient("serena", API_ID, API_HASH)
-pbot = Client("SerenaRobot", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
-aiohttpsession = ClientSession()
-arq = ARQ("https://thearq.tech", "YIECCC-NAJARO-OLLREW-SJSRIP-ARQ", aiohttpsession)
+telethn = TelegramClient("Serena", API_ID, API_HASH)
+pbot = Client("SerenaRobotpbot", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
 dispatcher = updater.dispatcher
 
 DRAGONS = list(DRAGONS) + list(DEV_USERS)
@@ -235,6 +220,7 @@ from SerenaRobot.modules.helper_funcs.handlers import (
     CustomMessageHandler,
     CustomRegexHandler,
 )
+   
 
 # make sure the regex handler can take extra kwargs
 tg.RegexHandler = CustomRegexHandler
